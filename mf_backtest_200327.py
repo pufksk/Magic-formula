@@ -8,8 +8,12 @@ Created on Fri Mar 27 18:18:54 2020
 import pandas as pd
 from marcap import marcap_data
 
+
 Ticker = pd.read_csv('./data/MAN_Ticker.csv', dtype={'코드':str}, encoding='euc-kr')
 Ticker = Ticker.iloc[:, 1:]
+dtypes={'Close':float, 'Changes':float, 'ChagesRatio':float, 'Open':float, 'High':float, 'Low':float,
+           'Volume':float, 'Amount':float, 'Marcap':float}
+KOSPI = pd.read_csv('./data/kospi.csv', dtype=dtypes, parse_dates=['Date'], thousands=',')
 
 df_fs = pd.read_csv('./data/Man_2003Y.csv', dtype={'코드':str}, encoding='euc-kr')
 df_fs = df_fs.iloc[:, 1:]
@@ -42,8 +46,11 @@ moneyperstock = seed_money / mf_count #종목별 투자액
 cash = 0 # 초기 현금잔고
 mf_list = df_last.index.tolist() # 선택된 종목의 코드를 리스트
 final_marcap = marcap_data('2004-04-01', '2005-03-31')
+KOSPI = KOSPI[('2004-04-01' <= KOSPI['Date']) & (KOSPI['Date'] <= '2005-03-31')]
 final_marcap = final_marcap[final_marcap['Code'].isin(mf_list)] #선정됙 종목의 marcap 정보만 추출
 df_yield = pd.DataFrame(columns=mf_list)    # 종목 코드를 column 이름으로 하는 dataframe 생성. 일자별 수익률 변화 체크
+df_yield['Date'] = KOSPI['Date']
+df_yield = df_yield.set_index('Date')
 df_asset = pd.Series(index=mf_list, dtype=float)    # 종목별 보유수량 체크
 balance = 0 #자산잔고
 
@@ -65,10 +72,13 @@ for stock in mf_list:
                 if tmp_df.loc[tmp_df.index[k], 'Stocks'] != tmp_df.loc[tmp_df.index[k+1], 'Stocks']:    #주식수의 변동이 있으면
                     before_mar = tmp_df.loc[tmp_df.index[k], 'Marcap'] * (1 + tmp_df.loc[tmp_df.index[k+1], 'ChagesRatio'] / 100)
                     after_mar = tmp_df.loc[tmp_df.index[k+1], 'Marcap']
+                    print(stock, before_mar, after_mar)
                     if change_count == 0:
                         if (after_mar * 0.99 < before_mar) & (before_mar < after_mar * 1.01):   #무상증자는 수정주가 계산이 필요함
                             start_price = tmp_df.loc[tmp_df.index[0], 'Open'] * tmp_df.loc[tmp_df.index[0], 'Stocks'] / tmp_df.loc[tmp_df.index[k+1], 'Stocks']
-                            tmp_df['Adj Close'] = tmp_df['Close'] * (tmp_df.loc[tmp_df.index[k], 'Stocks'] / tmp_df.loc[tmp_df.index[k+1], 'Stocks'])  #수정종가
+                            latest_price = tmp_df.loc[tmp_df.index[k+1], 'Stocks']
+                            tmp_df['Adj Close'] = tmp_df['Close'] * (tmp_df['Stocks'] / latest_price)  #수정종가
+                            print(tmp_df['Adj Close'])
                         else:   #유상증자는 수정주가 계산 필요 없음
                             tmp_df['Adj Close'] = tmp_df['Close']
                             start_price = tmp_df.loc[tmp_df.index[0], 'Open']
@@ -76,7 +86,8 @@ for stock in mf_list:
                     else:   # 주식수 변동이 여러번 있으면 수정주가가 기존 종가를 계속 사용할 수 없으므로 기존 종가 대신 기존 수정주가를 이용해 다시 계산
                         if (after_mar * 0.99 < before_mar) & (before_mar < after_mar * 1.01):
                             start_price = start_price * tmp_df.loc[tmp_df.index[k], 'Stocks'] / tmp_df.loc[tmp_df.index[k+1], 'Stocks']
-                            tmp_df['Adj Close'] = tmp_df['Adj Close'] * (tmp_df.loc[tmp_df.index[k], 'Stocks'] / tmp_df.loc[tmp_df.index[k+1], 'Stocks'])  #수정종가
+                            atest_price = tmp_df.loc[tmp_df.index[k+1], 'Stocks']
+                            tmp_df['Adj Close'] = tmp_df['Adj Close'] * (tmp_df['Stocks'] / latest_price)  #수정종가
                         else:
                             start_price = start_price
                             tmp_df['Adj Close'] = tmp_df['Adj Close']
