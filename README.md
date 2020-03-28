@@ -21,3 +21,10 @@
 재무제표 데이터
 ![fs_data](https://user-images.githubusercontent.com/33973546/77590051-35cd9400-6f30-11ea-95c4-a8fcb029afda.PNG)
 
+
+결과
+
+2,000만원을 가지고 1년에 한번 20종목을 조정하는 규칙으로 2004년 4월 1일부터 2019년 3월 31일까지의 결과입니다. 연평균 수익률은 14%입니다.
+
+![fs_test_year](https://user-images.githubusercontent.com/33973546/77818247-53f3e980-7114-11ea-81b2-433322f5279b.PNG)
+
